@@ -157,6 +157,24 @@ try {
         logMessage("Default pricing plans inserted.", 'success');
     }
 
+    // 6. Add course_mode column to pricing_plans if missing
+    $modeCol = $pdo->query("SHOW COLUMNS FROM pricing_plans LIKE 'course_mode'")->fetchAll();
+    if (empty($modeCol)) {
+        $pdo->exec("ALTER TABLE pricing_plans ADD COLUMN course_mode ENUM('Online','Offline','Both') NOT NULL DEFAULT 'Both' AFTER description");
+        logMessage("Column 'course_mode' added to table 'pricing_plans'.", 'success');
+    } else {
+        logMessage("Column 'course_mode' already exists in 'pricing_plans'.");
+    }
+
+    // 7. Add monthly_fee column to pricing_plans if missing
+    $monthlyCol = $pdo->query("SHOW COLUMNS FROM pricing_plans LIKE 'monthly_fee'")->fetchAll();
+    if (empty($monthlyCol)) {
+        $pdo->exec("ALTER TABLE pricing_plans ADD COLUMN monthly_fee DECIMAL(10,2) DEFAULT NULL AFTER course_mode");
+        logMessage("Column 'monthly_fee' added to table 'pricing_plans'.", 'success');
+    } else {
+        logMessage("Column 'monthly_fee' already exists in 'pricing_plans'.");
+    }
+
     logMessage("== All Database Migrations Completed Successfully ==", 'success');
 
     if (!$isCli) {

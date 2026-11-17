@@ -418,6 +418,32 @@ require_once 'includes/header.php';
                 </div>
             </div>
 
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="course_mode" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 ml-1">
+                        Course Mode <span class="text-red-500">*</span>
+                    </label>
+                    <select name="course_mode" id="course_mode" required
+                            class="w-full px-4 py-3 rounded-2xl bg-gray-50 border border-gray-100 font-semibold text-xs focus:ring-4 focus:ring-brand/10 focus:border-brand outline-none transition-all">
+                        <option value="Both">Online &amp; Offline (Both)</option>
+                        <option value="Online">Online Only</option>
+                        <option value="Offline">Offline Only</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="monthly_fee" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 ml-1">
+                        Monthly Fee (₹) <span class="text-gray-400 font-normal lowercase">(optional)</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₹</span>
+                        <input type="number" step="0.01" min="0" name="monthly_fee" id="monthly_fee"
+                               class="w-full pl-8 pr-4 py-3 rounded-2xl bg-gray-50 border border-gray-100 font-bold text-sm focus:ring-4 focus:ring-brand/10 focus:border-brand outline-none transition-all"
+                               placeholder="e.g. 2000.00">
+                    </div>
+                </div>
+            </div>
+
             <div>
                 <label for="plan_description" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 ml-1">
                     Features / Plan Description
@@ -492,6 +518,8 @@ require_once 'includes/header.php';
         document.getElementById('course_duration').value = '';
         document.getElementById('price').value = '';
         document.getElementById('discount_price').value = '';
+        document.getElementById('course_mode').value = 'Both';
+        document.getElementById('monthly_fee').value = '';
         document.getElementById('plan_description').value = '';
         document.getElementById('plan_status').value = 'Active';
         document.getElementById('planSubmitBtn').innerText = 'Save Pricing Plan';
@@ -515,6 +543,8 @@ require_once 'includes/header.php';
         document.getElementById('course_duration').value = plan.course_duration;
         document.getElementById('price').value = plan.price;
         document.getElementById('discount_price').value = plan.discount_price || '';
+        document.getElementById('course_mode').value = plan.course_mode || 'Both';
+        document.getElementById('monthly_fee').value = plan.monthly_fee || '';
         document.getElementById('plan_description').value = plan.description || '';
         document.getElementById('plan_status').value = plan.status;
         document.getElementById('planSubmitBtn').innerText = 'Save Changes';

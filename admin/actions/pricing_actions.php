@@ -27,6 +27,8 @@ switch ($action) {
         $course_duration = trim($_POST['course_duration'] ?? '');
         $price           = floatval($_POST['price'] ?? 0);
         $discount_price  = !empty($_POST['discount_price']) ? floatval($_POST['discount_price']) : null;
+        $course_mode     = in_array($_POST['course_mode'] ?? '', ['Online','Offline','Both']) ? $_POST['course_mode'] : 'Both';
+        $monthly_fee     = !empty($_POST['monthly_fee']) ? floatval($_POST['monthly_fee']) : null;
         $description     = trim($_POST['description'] ?? '');
         $status          = ($_POST['status'] ?? 'Active') === 'Inactive' ? 'Inactive' : 'Active';
 
@@ -54,10 +56,10 @@ switch ($action) {
 
         try {
             $stmt = $pdo->prepare("
-                INSERT INTO pricing_plans (plan_name, category_id, course_duration, price, discount_price, description, status) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO pricing_plans (plan_name, category_id, course_duration, price, discount_price, description, course_mode, monthly_fee, status) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$plan_name, $category_id, $course_duration, $price, $discount_price, $description, $status]);
+            $stmt->execute([$plan_name, $category_id, $course_duration, $price, $discount_price, $description, $course_mode, $monthly_fee, $status]);
             set_flash_message('success', 'Pricing plan "' . htmlspecialchars($plan_name) . '" created successfully.');
         } catch (PDOException $e) {
             set_flash_message('error', 'Database error: ' . $e->getMessage());
@@ -71,6 +73,8 @@ switch ($action) {
         $course_duration = trim($_POST['course_duration'] ?? '');
         $price           = floatval($_POST['price'] ?? 0);
         $discount_price  = !empty($_POST['discount_price']) ? floatval($_POST['discount_price']) : null;
+        $course_mode     = in_array($_POST['course_mode'] ?? '', ['Online','Offline','Both']) ? $_POST['course_mode'] : 'Both';
+        $monthly_fee     = !empty($_POST['monthly_fee']) ? floatval($_POST['monthly_fee']) : null;
         $description     = trim($_POST['description'] ?? '');
         $status          = ($_POST['status'] ?? 'Active') === 'Inactive' ? 'Inactive' : 'Active';
 
@@ -89,10 +93,10 @@ switch ($action) {
         try {
             $stmt = $pdo->prepare("
                 UPDATE pricing_plans 
-                SET plan_name = ?, category_id = ?, course_duration = ?, price = ?, discount_price = ?, description = ?, status = ?
+                SET plan_name = ?, category_id = ?, course_duration = ?, price = ?, discount_price = ?, description = ?, course_mode = ?, monthly_fee = ?, status = ?
                 WHERE id = ?
             ");
-            $stmt->execute([$plan_name, $category_id, $course_duration, $price, $discount_price, $description, $status, $id]);
+            $stmt->execute([$plan_name, $category_id, $course_duration, $price, $discount_price, $description, $course_mode, $monthly_fee, $status, $id]);
             set_flash_message('success', 'Pricing plan updated successfully.');
         } catch (PDOException $e) {
             set_flash_message('error', 'Database error: ' . $e->getMessage());

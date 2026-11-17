@@ -327,15 +327,22 @@ foreach ($activeCategories as $cat) {
                 <div class="glass-card !p-6 flex flex-col group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:border-brand/40 relative shrink-0"
                      style="min-width: 280px; width: 280px;"
                      data-aos="zoom-in" data-aos-delay="<?php echo $delay; ?>"
+<<<<<<< HEAD
                      onclick="scrollToCategoryPackages('<?php echo htmlspecialchars($cat['category_name'], ENT_QUOTES); ?>')">
+=======
+                     onclick="redirectToCourseFee('<?php echo htmlspecialchars(addslashes($cat['category_name'])); ?>', <?php echo $catId; ?>)"
+                     title="Click to view Professional Course Fees for <?php echo htmlspecialchars($cat['category_name']); ?>">
+>>>>>>> b25d54e (Save latest project changes)
                     
                     <!-- Image -->
                     <div class="w-full h-52 sm:h-56 rounded-2xl mb-6 overflow-hidden shadow-md border border-white/50 bg-purple-50/50 flex items-center justify-center relative">
                         <img src="<?php echo $catImg; ?>" alt="<?php echo htmlspecialchars($cat['category_name']); ?>"
                             class="w-full h-full object-cover aspect-square transition-transform duration-500 group-hover:scale-105" loading="lazy">
                         
-                        <!-- Floating Packages Count Badge -->
-                        <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-brand font-extrabold text-xs px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 border border-purple-100">
+                        <!-- Floating Packages Count Badge (opens quick package breakdown modal) -->
+                        <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-brand font-extrabold text-xs px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 border border-purple-100 hover:bg-brand hover:text-white transition-all cursor-pointer"
+                             onclick="event.stopPropagation(); openCategoryPackagesModal(<?php echo $catId; ?>)"
+                             title="Click to view package details modal">
                             <i class="fa-solid fa-layer-group text-[11px]"></i>
                             <span><?php echo $planCount; ?> <?php echo $planCount === 1 ? 'Package' : 'Packages'; ?></span>
                         </div>
@@ -354,12 +361,13 @@ foreach ($activeCategories as $cat) {
                     </ul>
                     <?php endif; ?>
 
-                    <!-- Bottom Call-To-Action Button -->
+                    <!-- Bottom Call-To-Action Button: Opens Package Details Modal -->
                     <div class="mt-auto pt-2">
                         <button type="button" 
-                                class="w-full py-2.5 px-4 rounded-xl bg-purple-50 text-brand group-hover:bg-brand group-hover:text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-xs">
-                            <i class="fa-solid fa-eye text-xs"></i>
-                            <span>View <?php echo $planCount; ?> Available Packages</span>
+                                onclick="event.stopPropagation(); openCategoryPackagesModal(<?php echo $catId; ?>)"
+                                class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-brand/10 to-brand-blue/10 text-brand border border-brand/20 group-hover:from-brand group-hover:to-brand-blue group-hover:text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer">
+                            <i class="fa-solid fa-layer-group text-xs"></i>
+                            <span>Show Packages</span>
                         </button>
                     </div>
                 </div>
@@ -637,6 +645,19 @@ foreach ($activeCategories as $cat) {
                 $pageNumber = floor($idx / 9) + 1;
                 $planCategoryName = trim($plan['category_name'] ?? 'Other');
 
+                // Auto-calculate monthly fee from duration string (e.g. "5 months", "3 Months", "2.5 Months")
+                $autoMonthlyFee = null;
+                if (preg_match('/(\d+(?:\.\d+)?)\s*month/i', $plan['course_duration'], $mMatch)) {
+                    $numMonths = (float)$mMatch[1];
+                    if ($numMonths > 0) {
+                        $autoMonthlyFee = ceil((float)$displayPrice / $numMonths);
+                    }
+                }
+                // Use manually set monthly_fee if present, otherwise use auto-calculated
+                $monthlyFeeDisplay = (!empty($plan['monthly_fee']) && (float)$plan['monthly_fee'] > 0)
+                    ? (float)$plan['monthly_fee']
+                    : $autoMonthlyFee;
+
                 // Parse description as bullet features
                 $features = [];
                 if (!empty($plan['description'])) {
@@ -657,6 +678,8 @@ foreach ($activeCategories as $cat) {
                     'display_price' => number_format($displayPrice, 0),
                     'has_discount' => $hasDiscount,
                     'save_pct' => $savePct,
+                    'course_mode' => $plan['course_mode'] ?? 'Both',
+                    'monthly_fee' => $monthlyFeeDisplay ? number_format((int)$monthlyFeeDisplay, 0) : '',
                     'features' => $features,
                     'colors' => $colors
                 ];
@@ -665,6 +688,7 @@ foreach ($activeCategories as $cat) {
             <div class="pricing-card glass-card flex flex-col justify-between group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 <?php echo $isFeatured ? 'bg-white/95 border-brand/50 shadow-[0_12px_45px_rgba(157,78,221,0.22)] md:-translate-y-4' : 'bg-white/75 hover:bg-white/90 hover:border-brand/30'; ?> <?php echo $pageNumber > 1 ? 'hidden' : ''; ?>"
                  data-page="<?php echo $pageNumber; ?>"
                  data-category="<?php echo htmlspecialchars(mb_strtolower($planCategoryName)); ?>"
+                 data-category-id="<?php echo (int)($plan['category_id'] ?? 0); ?>"
                  data-name="<?php echo htmlspecialchars(mb_strtolower($plan['plan_name'] . ' ' . $planCategoryName)); ?>"
                  data-aos="<?php echo $idx % 2 === 0 ? 'flip-left' : 'flip-right'; ?>"
                  onclick='openPlanDetailsModal(<?php echo $planJson; ?>)'>
@@ -685,6 +709,20 @@ foreach ($activeCategories as $cat) {
                         <span class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                             <i class="fa-regular fa-clock"></i> <?php echo htmlspecialchars($plan['course_duration']); ?>
                         </span>
+                        <?php
+                            // Course mode badge
+                            $mode = $plan['course_mode'] ?? 'Both';
+                            $modeCfg = [
+                                'Online'  => ['bg'=>'bg-blue-50',   'text'=>'text-blue-600',   'border'=>'border-blue-200',   'icon'=>'fa-wifi',       'label'=>'Online'],
+                                'Offline' => ['bg'=>'bg-orange-50', 'text'=>'text-orange-600', 'border'=>'border-orange-200', 'icon'=>'fa-building',   'label'=>'Offline'],
+                                'Both'    => ['bg'=>'bg-violet-50', 'text'=>'text-violet-600', 'border'=>'border-violet-200', 'icon'=>'fa-layer-group','label'=>'Online & Offline'],
+                            ];
+                            $mc = $modeCfg[$mode] ?? $modeCfg['Both'];
+                        ?>
+                        <span class="inline-flex items-center gap-1.5 text-xs font-extrabold <?php echo $mc['text'].' '.$mc['bg']; ?> px-3 py-1 rounded-full border <?php echo $mc['border']; ?> mt-1 ring-1 ring-inset <?php echo $mc['border']; ?>">
+                            <i class="fa-solid <?php echo $mc['icon']; ?> text-[9px]"></i>
+                            <?php echo $mc['label']; ?>
+                        </span>
                     </div>
 
                     <!-- Pricing -->
@@ -702,6 +740,12 @@ foreach ($activeCategories as $cat) {
                             ₹<?php echo number_format($displayPrice, 0); ?>
                         </div>
                         <p class="text-gray-500 font-medium mt-2 text-sm">Standard Fee</p>
+                        <?php endif; ?>
+                        <?php if ($monthlyFeeDisplay && $monthlyFeeDisplay > 0): ?>
+                        <div class="mt-3 inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-extrabold px-3 py-1.5 rounded-full">
+                            <i class="fa-solid fa-calendar-days text-[10px]"></i>
+                            ₹<?php echo number_format((int)$monthlyFeeDisplay, 0); ?> / month
+                        </div>
                         <?php endif; ?>
                     </div>
 
@@ -741,8 +785,9 @@ foreach ($activeCategories as $cat) {
         </div>
 
         <?php 
+        $pageSize = 9;
         $totalPlans = count($activePlans);
-        $totalPages = max(1, (int)ceil($totalPlans / 9));
+        $totalPages = max(1, (int)ceil($totalPlans / $pageSize));
         ?>
         <!-- Pagination Bar (3 rows x 3 cards = 9 cards per page) -->
         <div class="mt-14 flex flex-col sm:flex-row items-center justify-center gap-4 relative z-20" id="pricingPaginationContainer">
@@ -773,7 +818,7 @@ foreach ($activeCategories as $cat) {
 
             <!-- Page Count Info Badge -->
             <div class="text-xs font-bold text-gray-600 bg-white/70 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/80 shadow-md">
-                Page <span id="currentPricingPageText" class="text-brand font-extrabold">1</span> of <span class="font-extrabold" id="totalPricingPagesText"><?php echo $totalPages; ?></span> (<span class="font-bold"><?php echo $totalPlans; ?></span> Total Plans &bull; 9/Page)
+                Page <span id="currentPricingPageText" class="text-brand font-extrabold">1</span> of <span class="font-extrabold" id="totalPricingPagesText"><?php echo $totalPages; ?></span> (<span class="font-bold" id="totalPricingPlansText"><?php echo $totalPlans; ?></span> Total Plans &bull; 9/Page)
             </div>
         </div>
 
@@ -832,6 +877,18 @@ foreach ($activeCategories as $cat) {
                 currentCategoryFilter = (catName || 'all').toLowerCase().trim();
                 currentPricingPage = 1;
 
+                // If btn is not directly passed, locate the matching filter pill
+                if (!btn && catName) {
+                    const normTarget = (catName || 'all').toLowerCase().trim();
+                    const pills = document.querySelectorAll('.fees-filter-pill');
+                    pills.forEach(p => {
+                        const df = (p.getAttribute('data-filter') || '').toLowerCase().trim();
+                        if (df === normTarget) {
+                            btn = p;
+                        }
+                    });
+                }
+
                 // Update active pill styling
                 const pills = document.querySelectorAll('.fees-filter-pill');
                 pills.forEach(p => {
@@ -853,6 +910,7 @@ foreach ($activeCategories as $cat) {
                 applyFeesFilter();
             }
 
+<<<<<<< HEAD
             // Scroll to fees section and automatically select the category packages
             function scrollToCategoryPackages(catName) {
                 const targetCat = (catName || '').toLowerCase().trim();
@@ -873,6 +931,66 @@ foreach ($activeCategories as $cat) {
                 if (feesSection) {
                     feesSection.scrollIntoView({ behavior: 'smooth' });
                 }
+=======
+            // Redirect from Category Card to its Professional Fee in #fees section with highlight
+            function redirectToCourseFee(catName, catId) {
+                if (!catName) return;
+
+                // 1. Clear search input if present
+                const searchInput = document.getElementById('feesSearchInput');
+                const clearBtn = document.getElementById('feesSearchClearBtn');
+                if (searchInput) searchInput.value = '';
+                if (clearBtn) {
+                    clearBtn.classList.add('hidden');
+                    clearBtn.classList.remove('flex');
+                }
+
+                // 2. Set Category filter
+                setFeesCategory(catName);
+
+                // 3. Smooth scroll down to #fees section
+                const feesSec = document.getElementById('fees');
+                if (feesSec) {
+                    const yOffset = -30;
+                    const y = feesSec.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                }
+
+                // 4. Highlight the matching fee card(s) with an animated glowing pulse
+                setTimeout(() => {
+                    const normCat = (catName || '').toLowerCase().trim();
+                    const allVisibleCards = Array.from(document.querySelectorAll('#pricingCardsGrid .pricing-card:not(.hidden)'));
+
+                    let matchedCards = allVisibleCards.filter(c => {
+                        const cCat = (c.getAttribute('data-category') || '').toLowerCase().trim();
+                        const cId  = c.getAttribute('data-category-id');
+                        return (catId && cId == catId) || (cCat === normCat);
+                    });
+
+                    if (matchedCards.length === 0) {
+                        matchedCards = allVisibleCards;
+                    }
+
+                    matchedCards.forEach(card => {
+                        card.classList.add(
+                            'ring-4',
+                            'ring-brand',
+                            'shadow-[0_0_50px_rgba(157,78,221,0.55)]',
+                            '!bg-white',
+                            'scale-[1.03]'
+                        );
+                        setTimeout(() => {
+                            card.classList.remove(
+                                'ring-4',
+                                'ring-brand',
+                                'shadow-[0_0_50px_rgba(157,78,221,0.55)]',
+                                '!bg-white',
+                                'scale-[1.03]'
+                            );
+                        }, 3200);
+                    });
+                }, 550);
+>>>>>>> b25d54e (Save latest project changes)
             }
 
             function applyFeesFilter() {
@@ -949,13 +1067,8 @@ foreach ($activeCategories as $cat) {
                 const pagContainer = document.getElementById('pricingPaginationContainer');
                 if (!pagContainer) return;
 
-                // Hide pagination if only 1 page and fits perfectly
-                if (totalPages <= 1) {
-                    pagContainer.classList.add('hidden');
-                    return;
-                } else {
-                    pagContainer.classList.remove('hidden');
-                }
+                // Ensure pagination is always visible when plans exist
+                pagContainer.classList.remove('hidden');
 
                 const numbersContainer = document.getElementById('pricingPageNumbers');
                 if (numbersContainer) {
@@ -980,8 +1093,10 @@ foreach ($activeCategories as $cat) {
 
                 const currentText = document.getElementById('currentPricingPageText');
                 const totalText = document.getElementById('totalPricingPagesText');
+                const countText = document.getElementById('totalPricingPlansText');
                 if (currentText) currentText.innerText = currentPricingPage;
                 if (totalText) totalText.innerText = totalPages;
+                if (countText) countText.innerText = totalCount;
             }
 
             function changePricingPage(targetPage) {
@@ -1022,6 +1137,7 @@ foreach ($activeCategories as $cat) {
                             <span class="text-sm font-semibold text-gray-400 line-through">₹${plan.price}</span>
                             <span class="text-[11px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Save ${plan.save_pct}%</span>
                         </div>
+                        ${plan.monthly_fee ? `<div class="mt-2 inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-extrabold px-3 py-1.5 rounded-full"><i class="fa-solid fa-calendar-days text-[10px]"></i> ₹${plan.monthly_fee} / month</div>` : ''}
                     `;
                 } else {
                     priceContainer.innerHTML = `
@@ -1029,7 +1145,21 @@ foreach ($activeCategories as $cat) {
                             ₹${plan.display_price}
                         </div>
                         <p class="text-gray-400 font-medium text-[11px] mt-0.5">Standard Fee</p>
+                        ${plan.monthly_fee ? `<div class="mt-2 inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-extrabold px-3 py-1.5 rounded-full"><i class="fa-solid fa-calendar-days text-[10px]"></i> ₹${plan.monthly_fee} / month</div>` : ''}
                     `;
+                }
+
+                // Course mode badge in modal
+                const modeMap = {
+                    'Online':  { bg: 'bg-blue-50',   text: 'text-blue-600',   border: 'border-blue-200',   icon: 'fa-wifi',        label: 'Online' },
+                    'Offline': { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200', icon: 'fa-building',    label: 'Offline' },
+                    'Both':    { bg: 'bg-violet-50', text: 'text-violet-600', border: 'border-violet-200', icon: 'fa-layer-group', label: 'Online & Offline' },
+                };
+                const mc = modeMap[plan.course_mode] || modeMap['Both'];
+                const existingModeBadge = document.getElementById('planModalModeBadge');
+                if (existingModeBadge) {
+                    existingModeBadge.className = `inline-flex items-center gap-1.5 text-xs font-extrabold ${mc.text} ${mc.bg} px-3 py-1 rounded-full border ${mc.border}`;
+                    existingModeBadge.innerHTML = `<i class="fa-solid ${mc.icon} text-[9px]"></i> ${mc.label}`;
                 }
 
                 // Populate all features
@@ -1145,11 +1275,15 @@ foreach ($activeCategories as $cat) {
                                 ${priceHtml}
                                 ${featsHtml}
                             </div>
-                            <div class="mt-4 pt-3 border-t border-gray-100">
+                            <div class="mt-4 pt-3 border-t border-gray-100 flex flex-col gap-2">
                                 <a href="#contact" onclick="selectCourseAndEnroll('${safePlanName}'); closeCategoryPackagesModal();"
                                    class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-brand to-brand-blue text-white font-extrabold text-xs shadow-md shadow-brand/20 hover:shadow-brand/40 transition-all block text-center">
                                     Enroll in Package
                                 </a>
+                                <button type="button" onclick="closeCategoryPackagesModal(); redirectToCourseFee('${escapeHtml(data.category_name).replace(/'/g, "\\'")}', ${catId});"
+                                   class="w-full py-2 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-brand font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                                    <i class="fa-solid fa-arrow-down text-[10px]"></i> View in Professional Course Fees
+                                </button>
                             </div>
                         `;
                         container.appendChild(pkgCard);
@@ -1230,6 +1364,11 @@ foreach ($activeCategories as $cat) {
                         <div class="flex items-center gap-1.5 mt-0.5 text-xs font-semibold text-gray-500">
                             <i class="fa-regular fa-clock text-brand text-[11px]"></i>
                             <span id="planModalDuration">Duration</span>
+                        </div>
+                        <div class="mt-1.5">
+                            <span id="planModalModeBadge" class="inline-flex items-center gap-1.5 text-xs font-extrabold text-violet-600 bg-violet-50 px-3 py-1 rounded-full border border-violet-200">
+                                <i class="fa-solid fa-layer-group text-[9px]"></i> Online &amp; Offline
+                            </span>
                         </div>
                     </div>
                     <button type="button" onclick="closePlanDetailsModal()" class="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 flex items-center justify-center transition-all cursor-pointer">
