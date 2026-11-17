@@ -21,9 +21,26 @@ function process_category_image($file, $targetWidth = 600, $targetHeight = 600) 
     }
 
     $allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    $fileInfo = @finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = $fileInfo ? finfo_file($fileInfo, $file['tmp_name']) : mime_content_type($file['tmp_name']);
-    if ($fileInfo) finfo_close($fileInfo);
+    $mimeType = null;
+
+    if (function_exists('finfo_open')) {
+        $fileInfo = @finfo_open(FILEINFO_MIME_TYPE);
+        if ($fileInfo) {
+            $mimeType = finfo_file($fileInfo, $file['tmp_name']);
+            finfo_close($fileInfo);
+        }
+    }
+
+    if (!$mimeType && function_exists('mime_content_type')) {
+        $mimeType = @mime_content_type($file['tmp_name']);
+    }
+
+    if (!$mimeType && function_exists('getimagesize')) {
+        $imageInfo = @getimagesize($file['tmp_name']);
+        if (!empty($imageInfo['mime'])) {
+            $mimeType = $imageInfo['mime'];
+        }
+    }
 
     if (!in_array($mimeType, $allowedMimes)) {
         return ['error' => 'Invalid file type. Only JPG, PNG, WEBP, and GIF images are allowed.'];

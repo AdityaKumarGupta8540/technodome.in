@@ -327,7 +327,7 @@ foreach ($activeCategories as $cat) {
                 <div class="glass-card !p-6 flex flex-col group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:border-brand/40 relative shrink-0"
                      style="min-width: 280px; width: 280px;"
                      data-aos="zoom-in" data-aos-delay="<?php echo $delay; ?>"
-                     onclick="openCategoryPackagesModal(<?php echo $catId; ?>)">
+                     onclick="scrollToCategoryPackages('<?php echo htmlspecialchars($cat['category_name'], ENT_QUOTES); ?>')">
                     
                     <!-- Image -->
                     <div class="w-full h-52 sm:h-56 rounded-2xl mb-6 overflow-hidden shadow-md border border-white/50 bg-purple-50/50 flex items-center justify-center relative">
@@ -851,6 +851,28 @@ foreach ($activeCategories as $cat) {
                 }
 
                 applyFeesFilter();
+            }
+
+            // Scroll to fees section and automatically select the category packages
+            function scrollToCategoryPackages(catName) {
+                const targetCat = (catName || '').toLowerCase().trim();
+                const pills = document.querySelectorAll('.fees-filter-pill');
+                let matchedBtn = null;
+                pills.forEach(p => {
+                    const filterVal = (p.getAttribute('data-filter') || '').toLowerCase().trim();
+                    if (filterVal === targetCat) {
+                        matchedBtn = p;
+                    }
+                });
+
+                if (matchedBtn) {
+                    setFeesCategory(catName, matchedBtn);
+                }
+
+                const feesSection = document.getElementById('fees');
+                if (feesSection) {
+                    feesSection.scrollIntoView({ behavior: 'smooth' });
+                }
             }
 
             function applyFeesFilter() {
